@@ -1,0 +1,74 @@
+#dc - domain component
+#cn - common name
+#ou - org units
+
+require 'net/ldap'
+
+class Ldap
+  attr_accessor :ldap_connection, :params, :ldap_response
+  def initialize(params = {})
+    self.ldap_connection = connect_to_ldap_server()
+    self.params = params
+  end
+
+  def connect_to_ldap_server
+    ldap = Net::LDAP.new :host => "ldap.forumsys.com",
+    :port => 389,
+    :base => "dc=example,dc=com",
+    :auth => {
+      :method => :simple,
+      :username => "",
+      :password => ""
+    }
+
+    if ldap.bind
+      puts "authentication succeeded"
+      puts ldap.inspect
+    else
+      puts "authentication failed"
+    end
+    ldap
+  end
+
+  def search_ldap
+
+    #to get all groups
+    groups = Net::LDAP::Filter.eq("objectclass", "groupOfUniqueNames")
+    puts ldap_connection.search(:filter => groups).inspect
+
+    #to get All Mathematicians
+    mathematician_filter = Net::LDAP::Filter.eq("ou", "chemists")
+    puts ldap_connection.search(:filter => mathematician_filter).inspect
+    
+    #to get particular user
+    particular_user = Net::LDAP::Filter.eq("uid", "euclid")
+    puts ldap_connection.search(:filter => particular_user).inspect
+    #Output
+    #[#<Net::LDAP::Entry:0x0000000158b280 @myhash={:dn=>["uid=euclid,dc=example,dc=com"], :uid=>["euclid"], :objectclass=>["inetOrgPerson", "organizationalPerson", "person", "top"], :cn=>["Euclid"], :sn=>["Euclid"], :mail=>["euclid@ldap.forumsys.com"]}>]
+    
+  end
+
+  #to Authenticate User
+  def authenticate_user(username,password)
+    result = ldap_connection.bind_as(
+    :base => "dc=example,dc=com",
+    :filter => "(uid=#{username})",
+    :password => password
+    )
+    if result
+      puts "Authentication Success"
+      puts "User Data:  #{result}"
+    else
+      puts result
+      puts "Authentication FAILED."
+    end
+  end
+end
+
+obj = Ldap.new()
+#to Perform Search
+obj.search_ldap
+
+# To Authenticate
+obj.authenticate_user("euclid","password")
+obj.authenticate_user("euclid","password1")
